@@ -275,7 +275,7 @@ def get_zone_name(zone):
     for state, zones in MALAYSIA_ZONES.items():
         if zone in zones:
             return zones[zone]
-    return zone  # Return the zone code if not found
+    return zone  # Return the zone code
 
 def get_calculation_methods():
     return CALCULATION_METHODS
