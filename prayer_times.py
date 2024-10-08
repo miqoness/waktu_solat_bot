@@ -1,10 +1,11 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import schedule
 import time
 from database import get_db_connection
 from translations import get_translation
 from datetime import datetime
+from pytz import timezone
 
 # Zon-zon Malaysia
 MALAYSIA_ZONES = {
@@ -117,15 +118,13 @@ CALCULATION_METHODS = {
     99: "Custom"
 }
 
-def convert_to_12hour(time_str):
+def convert_to_24hour(time_str):
     try:
-        # Mengubah string waktu ke objek datetime
-        time_obj = datetime.strptime(time_str, "%H:%M:%S")
-        # Mengubah ke format 12 jam
-        return time_obj.strftime("%I:%M %p")
+        time_obj = datetime.strptime(time_str, "%I:%M %p")
+        return time_obj.strftime("%H:%M")
     except ValueError:
         print(f"Error converting time: {time_str}")
-        return time_str  # Kembalikan string asal jika ada masalah
+        return time_str
 
 def get_prayer_times(zone, lat=None, lon=None, method=20):
     print(f"get_prayer_times called with zone: {zone}, lat: {lat}, lon: {lon}, method: {method}")
@@ -165,12 +164,12 @@ def get_jakim_prayer_times(zone):
         if 'prayerTime' in data and data['prayerTime'] and isinstance(data['prayerTime'], list) and data['prayerTime'][0]:
             prayer_times = data['prayerTime'][0]
             result = {
-                'Subuh': convert_to_12hour(prayer_times.get('fajr', 'N/A')),
-                'Syuruk': convert_to_12hour(prayer_times.get('syuruk', 'N/A')),
-                'Zohor': convert_to_12hour(prayer_times.get('dhuhr', 'N/A')),
-                'Asar': convert_to_12hour(prayer_times.get('asr', 'N/A')),
-                'Maghrib': convert_to_12hour(prayer_times.get('maghrib', 'N/A')),
-                'Isyak': convert_to_12hour(prayer_times.get('isha', 'N/A'))
+                'Subuh': prayer_times.get('fajr', 'N/A'),
+                'Syuruk': prayer_times.get('syuruk', 'N/A'),
+                'Zohor': prayer_times.get('dhuhr', 'N/A'),
+                'Asar': prayer_times.get('asr', 'N/A'),
+                'Maghrib': prayer_times.get('maghrib', 'N/A'),
+                'Isyak': prayer_times.get('isha', 'N/A')
             }
             print(f"Processed prayer times: {result}")
             return result
@@ -183,8 +182,6 @@ def get_jakim_prayer_times(zone):
     except Exception as e:
         print(f"Unexpected error in get_jakim_prayer_times: {e}")
         return None
-
-# Fungsi get_international_prayer_times tetap sama
 
 def get_international_prayer_times(lat, lon, method=2):
     base_url = "http://api.aladhan.com/v1/timings"
@@ -201,28 +198,30 @@ def get_international_prayer_times(lat, lon, method=2):
         data = response.json()
         if "data" in data and "timings" in data["data"]:
             return {
-                'Subuh': convert_to_12hour(data['data']['timings']['Fajr']),
-                'Syuruk': convert_to_12hour(data['data']['timings']['Sunrise']),
-                'Zohor': convert_to_12hour(data['data']['timings']['Dhuhr']),
-                'Asar': convert_to_12hour(data['data']['timings']['Asr']),
-                'Maghrib': convert_to_12hour(data['data']['timings']['Maghrib']),
-                'Isyak': convert_to_12hour(data['data']['timings']['Isha'])
+                'Subuh': data['data']['timings']['Fajr'],
+                'Syuruk': data['data']['timings']['Sunrise'],
+                'Zohor': data['data']['timings']['Dhuhr'],
+                'Asar': data['data']['timings']['Asr'],
+                'Maghrib': data['data']['timings']['Maghrib'],
+                'Isyak': data['data']['timings']['Isha']
             }
     except requests.RequestException as e:
         print(f"Error fetching international prayer times: {e}")
     return None
+
 
 def get_next_prayer(zone, lat=None, lon=None, method=20):
     times, location_type = get_prayer_times(zone, lat, lon, method)
     if not times:
         return None, None, None
 
-    now = datetime.now().time()
+    malaysia_tz = timezone('Asia/Kuala_Lumpur')
+    now = datetime.now(malaysia_tz).time()
     next_prayer = None
     next_time = None
 
     for prayer, time_str in times.items():
-        prayer_time = datetime.strptime(time_str, "%I:%M %p").time()
+        prayer_time = datetime.strptime(time_str, "%H:%M:%S").time()
         if prayer_time > now:
             if next_time is None or prayer_time < next_time:
                 next_prayer = prayer
@@ -230,8 +229,8 @@ def get_next_prayer(zone, lat=None, lon=None, method=20):
 
     if next_prayer is None:
         next_prayer = "Subuh"
-        next_time = datetime.strptime(times["Subuh"], "%I:%M %p").time()
-        next_time = datetime.combine(datetime.now().date() + timedelta(days=1), next_time).time()
+        next_time = datetime.strptime(times["Subuh"], "%H:%M:%S").time()
+        next_time = datetime.combine(datetime.now(malaysia_tz).date() + timedelta(days=1), next_time).time()
 
     return next_prayer, next_time.strftime("%I:%M %p"), location_type
 
@@ -245,13 +244,29 @@ def format_prayer_times(zone, lat=None, lon=None, method=20):
         return "Maaf, tidak dapat mendapatkan waktu solat untuk lokasi ini."
     
     if location_type == 'Malaysia':
-        formatted = f"Waktu Solat untuk {get_zone_name(zone)}:\n"
+        formatted = f"🕌 *Waktu Solat untuk {get_zone_name(zone)}:*\n\n"
     else:
         method_name = CALCULATION_METHODS.get(method, f"Kaedah Tidak Dikenali ({method})")
-        formatted = f"Waktu Solat untuk lokasi anda (Kaedah: {method_name}):\n"
+        formatted = f"🕌 *Waktu Solat untuk lokasi anda (Kaedah: {method_name}):*\n\n"
+    
+    emojis = {
+        'Subuh': '🌄',
+        'Syuruk': '🌅',
+        'Zohor': '☀️',
+        'Asar': '🌇',
+        'Maghrib': '🌆',
+        'Isyak': '🌙'
+    }
     
     for prayer, time in times.items():
-        formatted += f"{prayer}: {time}\n"
+        emoji = emojis.get(prayer, '')
+        formatted_time = datetime.strptime(time, '%H:%M:%S').strftime('%I:%M %p')
+        formatted += f"{emoji} *{prayer}:* {formatted_time}\n"
+    
+    formatted += f"\n📅 *Tarikh:* {datetime.now(timezone('Asia/Kuala_Lumpur')).strftime('%d/%m/%Y')}"
+    formatted += "\n🕰 *Zon Waktu:* Asia/Kuala_Lumpur"
+    
+    formatted += "\n\n📲 Dapatkan waktu solat di Telegram: [Muslim Prayer Times Bot](https://t.me/muslimprayertimes_bot)"
     
     print(f"Formatted prayer times: {formatted}")
     return formatted
@@ -266,9 +281,11 @@ def get_calculation_methods():
     return CALCULATION_METHODS
 
 def send_prayer_notification(bot):
-    now = datetime.now()
+    malaysia_tz = timezone('Asia/Kuala_Lumpur')
+    now = datetime.now(malaysia_tz)
     current_time = now.strftime("%H:%M")
-    
+    print(f"Checking notifications at {current_time}")  # Log masa semasa
+
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("SELECT user_id, zone, latitude, longitude, language, calculation_method FROM users")
@@ -277,6 +294,8 @@ def send_prayer_notification(bot):
 
     for user in users:
         user_id, zone, lat, lon, lang, method = user
+        print(f"Checking for user {user_id}, zone: {zone}, lat: {lat}, lon: {lon}")  # Log maklumat pengguna
+
         if zone:
             prayer_times, _ = get_prayer_times(zone)
         elif lat and lon:
@@ -285,9 +304,12 @@ def send_prayer_notification(bot):
             continue  # Skip users without location info
 
         if prayer_times:
+            print(f"Prayer times for user {user_id}: {prayer_times}")  # Log waktu solat
             for prayer, time in prayer_times.items():
-                if time == current_time:
-                    message = get_translation(lang, 'prayer_notification').format(prayer, time)
+                prayer_time = datetime.strptime(time, "%H:%M:%S").strftime("%H:%M")
+                if prayer_time == current_time:
+                    print(f"Sending notification for {prayer} to user {user_id}")  # Log notifikasi yang dihantar
+                    message = get_translation(lang, 'prayer_notification').format(prayer, datetime.strptime(time, "%H:%M:%S").strftime("%I:%M %p"))
                     bot.send_message(user_id, message)
 
 def start_prayer_scheduler(bot):

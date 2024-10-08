@@ -3,6 +3,7 @@ from telebot.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKey
 from database import get_db_connection, update_user_location, update_user_method, update_user_language
 from translations import get_translation
 from prayer_times import MALAYSIA_ZONES, format_prayer_times, get_next_prayer, get_calculation_methods
+from datetime import datetime
 
 def register_handlers(bot: TeleBot):
     @bot.message_handler(commands=['start'])
@@ -10,7 +11,7 @@ def register_handlers(bot: TeleBot):
         user_id = message.from_user.id
         lang = get_user_language(user_id)
         bot.reply_to(message, get_translation(lang, 'welcome'))
-        send_location_request(bot, message)
+        send_main_menu(bot, message)
 
     @bot.message_handler(commands=['help'])
     def help_command(message: Message):
@@ -50,13 +51,14 @@ def register_handlers(bot: TeleBot):
             
             prayer_times = format_prayer_times(zone_code)
             if prayer_times:
-                bot.send_message(user_id, prayer_times)
+                bot.send_message(user_id, prayer_times, parse_mode='Markdown')
             else:
                 bot.send_message(user_id, get_translation(lang, 'error_getting_prayer_times'))
 
             print(f"User {user_id} selected zone {zone_code} ({selected_zone_name}). Prayer times: {prayer_times}")  # Debug print
         else:
             bot.reply_to(message, "Maaf, zon yang dipilih tidak sah.")
+        send_main_menu(bot, message)
 
     @bot.message_handler(commands=['method'])
     def method_command(message: Message):
@@ -80,7 +82,8 @@ def register_handlers(bot: TeleBot):
         
         method = get_user_method(user_id)
         prayer_times = format_prayer_times(None, lat, lon, method)
-        bot.send_message(user_id, prayer_times)
+        bot.send_message(user_id, prayer_times, parse_mode='Markdown')
+        send_main_menu(bot, message)
 
     @bot.message_handler(func=lambda message: message.text.isdigit() and int(message.text) in get_calculation_methods())
     def handle_method_selection(message: Message):
@@ -95,7 +98,8 @@ def register_handlers(bot: TeleBot):
         lat, lon = get_user_location(user_id)
         if lat and lon:
             prayer_times = format_prayer_times(None, lat, lon, selected_method)
-            bot.send_message(user_id, prayer_times)
+            bot.send_message(user_id, prayer_times, parse_mode='Markdown')
+        send_main_menu(bot, message)
 
     @bot.message_handler(func=lambda message: message.text in ["Bahasa Melayu", "English"])
     def handle_language_selection(message: Message):
@@ -103,24 +107,31 @@ def register_handlers(bot: TeleBot):
         lang = 'ms' if message.text == "Bahasa Melayu" else 'en'
         update_user_language(user_id, lang)
         bot.reply_to(message, get_translation(lang, 'language_updated'), reply_markup=ReplyKeyboardRemove())
+        send_main_menu(bot, message)
 
-    @bot.message_handler(func=lambda message: message.text in ["Pilih Zon Malaysia", "Pilih Kaedah Pengiraan"])
+    @bot.message_handler(func=lambda message: message.text in ["📅 Waktu Solat Hari Ini", "⚙️ Tetapan", "❓ Bantuan", "Kembali ke Menu Utama"])
+    def handle_main_menu(message: Message):
+        if message.text == "📅 Waktu Solat Hari Ini":
+            send_today_prayer_times(bot, message)
+        elif message.text == "⚙️ Tetapan":
+            send_settings_menu(bot, message)
+        elif message.text == "❓ Bantuan":
+            help_command(message)
+        elif message.text == "Kembali ke Menu Utama":
+            send_main_menu(bot, message)
+
+    @bot.message_handler(func=lambda message: message.text in ["Pilih Zon Malaysia", "Pilih Kaedah Pengiraan", "Tukar Bahasa"])
     def process_choice(message: Message):
         if message.text == "Pilih Zon Malaysia":
             send_state_selection(bot, message)
         elif message.text == "Pilih Kaedah Pengiraan":
             send_method_selection(bot, message)
+        elif message.text == "Tukar Bahasa":
+            language_command(message)
 
     @bot.message_handler(commands=['times'])
     def times_command(message: Message):
-        user_id = message.from_user.id
-        zone, lat, lon = get_user_location_info(user_id)
-        method = get_user_method(user_id)
-        if zone or (lat and lon):
-            prayer_times = format_prayer_times(zone, lat, lon, method)
-            bot.reply_to(message, prayer_times)
-        else:
-            send_location_request(bot, message)
+        send_today_prayer_times(bot, message)
 
     @bot.message_handler(commands=['next'])
     def next_prayer_command(message: Message):
@@ -134,6 +145,26 @@ def register_handlers(bot: TeleBot):
             bot.reply_to(message, response)
         else:
             send_location_request(bot, message)
+
+    @bot.message_handler(func=lambda message: True)
+    def handle_all_messages(message: Message):
+        bot.reply_to(message, "Maaf, saya tidak memahami mesej anda. Sila gunakan butang yang disediakan.")
+        send_main_menu(bot, message)
+
+def send_main_menu(bot, message: Message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row('📅 Waktu Solat Hari Ini')
+    markup.row('⚙️ Tetapan', '❓ Bantuan')
+    bot.send_message(message.chat.id, "Sila pilih:", reply_markup=markup)
+
+def send_settings_menu(bot, message: Message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(KeyboardButton("Hantar Lokasi", request_location=True))
+    markup.add(KeyboardButton("Pilih Zon Malaysia"))
+    markup.add(KeyboardButton("Pilih Kaedah Pengiraan"))
+    markup.add(KeyboardButton("Tukar Bahasa"))
+    markup.add(KeyboardButton("Kembali ke Menu Utama"))
+    bot.reply_to(message, "Sila pilih satu pilihan:", reply_markup=markup)
 
 def send_location_request(bot, message: Message):
     markup = ReplyKeyboardMarkup(row_width=2)
@@ -160,6 +191,18 @@ def send_method_selection(bot, message: Message):
     for method_id, method_name in methods.items():
         markup.add(KeyboardButton(str(method_id)))
     bot.reply_to(message, "Sila pilih kaedah pengiraan waktu solat:", reply_markup=markup)
+
+def send_today_prayer_times(bot, message: Message):
+    user_id = message.from_user.id
+    zone, lat, lon = get_user_location_info(user_id)
+    method = get_user_method(user_id)
+    if zone or (lat and lon):
+        prayer_times = format_prayer_times(zone, lat, lon, method)
+        bot.send_message(message.chat.id, prayer_times, parse_mode='Markdown')
+    else:
+        lang = get_user_language(user_id)
+        bot.reply_to(message, get_translation(lang, 'location_not_set'))
+        send_location_request(bot, message)
 
 def get_user_language(user_id):
     conn = get_db_connection()
