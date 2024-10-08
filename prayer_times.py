@@ -6,6 +6,7 @@ from database import get_db_connection
 from translations import get_translation
 from datetime import datetime
 from pytz import timezone
+from datetime import datetime  # Pastikan ini sudah diimport
 
 # Zon-zon Malaysia
 MALAYSIA_ZONES = {
@@ -117,6 +118,12 @@ CALCULATION_METHODS = {
     20: "Department of Islamic Advancement, Malaysia (JAKIM)",
     99: "Custom"
 }
+
+def parse_time(time_str):
+    try:
+        return datetime.strptime(time_str, "%H:%M:%S").strftime("%H:%M")
+    except ValueError:
+        return datetime.strptime(time_str, "%H:%M").strftime("%H:%M")
 
 def convert_to_24hour(time_str):
     try:
@@ -306,7 +313,7 @@ def send_prayer_notification(bot):
         if prayer_times:
             print(f"Prayer times for user {user_id}: {prayer_times}")  # Log waktu solat
             for prayer, time in prayer_times.items():
-                prayer_time = datetime.strptime(time, "%H:%M:%S").strftime("%H:%M")
+                prayer_time = parse_time(time)
                 if prayer_time == current_time:
                     print(f"Sending notification for {prayer} to user {user_id}")  # Log notifikasi yang dihantar
                     message = get_translation(lang, 'prayer_notification').format(prayer, datetime.strptime(time, "%H:%M:%S").strftime("%I:%M %p"))
