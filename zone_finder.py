@@ -198,7 +198,7 @@ def get_malaysia_zone(lat, lon):
     elif 5.2 <= lat <= 5.4 and 115.1 <= lon <= 115.3:
         return 'WLY02'
     
-    # Default jika tidak dapat menentukan zon
+    # Default jika tidak dapat menentukan zone
     return 'WLY01'  # Default ke Wilayah Persekutuan sebagai langkah keselamatan
 
 def get_zone_info(zone_code):
