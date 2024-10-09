@@ -190,7 +190,7 @@ def get_jakim_prayer_times(zone):
         print(f"Unexpected error in get_jakim_prayer_times: {e}")
         return None
 
-def get_international_prayer_times(lat, lon, method=2):
+def get_international_prayer_times(lat, lon, method=20):
     base_url = "http://api.aladhan.com/v1/timings"
     date = datetime.now().strftime("%d-%m-%Y")
     params = {
@@ -205,12 +205,12 @@ def get_international_prayer_times(lat, lon, method=2):
         data = response.json()
         if "data" in data and "timings" in data["data"]:
             return {
-                'Subuh': data['data']['timings']['Fajr'],
-                'Syuruk': data['data']['timings']['Sunrise'],
-                'Zohor': data['data']['timings']['Dhuhr'],
-                'Asar': data['data']['timings']['Asr'],
-                'Maghrib': data['data']['timings']['Maghrib'],
-                'Isyak': data['data']['timings']['Isha']
+                'Subuh': parse_time(data['data']['timings']['Fajr']),
+                'Syuruk': parse_time(data['data']['timings']['Sunrise']),
+                'Zohor': parse_time(data['data']['timings']['Dhuhr']),
+                'Asar': parse_time(data['data']['timings']['Asr']),
+                'Maghrib': parse_time(data['data']['timings']['Maghrib']),
+                'Isyak': parse_time(data['data']['timings']['Isha'])
             }
     except requests.RequestException as e:
         print(f"Error fetching international prayer times: {e}")
