@@ -4,6 +4,7 @@ from database import get_db_connection, update_user_location, update_user_langua
 from translations import get_translation
 from prayer_times import MALAYSIA_ZONES, format_prayer_times, get_next_prayer
 from zone_finder import get_malaysia_zone
+from hadis_harian import send_daily_hadith  # Import fungsi hadis harian
 from datetime import datetime
 
 def register_handlers(bot: TeleBot):
@@ -99,10 +100,12 @@ def register_handlers(bot: TeleBot):
         bot.reply_to(message, get_translation(lang, 'language_updated'), reply_markup=ReplyKeyboardRemove())
         send_main_menu(bot, message)
 
-    @bot.message_handler(func=lambda message: message.text in ["📅 Waktu Solat Hari Ini", "⚙️ Tetapan", "❓ Bantuan", "Kembali ke Menu Utama"])
+    @bot.message_handler(func=lambda message: message.text in ["📅 Waktu Solat Hari Ini", "📚 Hadith Harian", "⚙️ Tetapan", "❓ Bantuan", "Kembali ke Menu Utama"])
     def handle_main_menu(message: Message):
         if message.text == "📅 Waktu Solat Hari Ini":
             send_today_prayer_times(bot, message)
+        elif message.text == "📚 Hadith Harian":
+            send_daily_hadith(bot, message)
         elif message.text == "⚙️ Tetapan":
             send_settings_menu(bot, message)
         elif message.text == "❓ Bantuan":
@@ -133,6 +136,10 @@ def register_handlers(bot: TeleBot):
         else:
             send_location_request(bot, message)
 
+    @bot.message_handler(commands=['hadith'])
+    def hadith_command(message: Message):
+        send_daily_hadith(bot, message)
+
     @bot.message_handler(func=lambda message: True)
     def handle_all_messages(message: Message):
         bot.reply_to(message, "Maaf, saya tidak memahami mesej anda. Sila gunakan butang yang disediakan.")
@@ -141,6 +148,7 @@ def register_handlers(bot: TeleBot):
 def send_main_menu(bot, message: Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row('📅 Waktu Solat Hari Ini')
+    markup.row('📚 Hadith Harian')
     markup.row('⚙️ Tetapan', '❓ Bantuan')
     bot.send_message(message.chat.id, "Sila pilih:", reply_markup=markup)
 
