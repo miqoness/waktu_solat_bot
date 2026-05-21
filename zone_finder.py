@@ -1,5 +1,3 @@
-# zone_finder.py
-
 MALAYSIA_ZONES = {
     'Johor': {
         'JHR01': 'Pulau Aur dan Pulau Pemanggil',
@@ -89,117 +87,204 @@ MALAYSIA_ZONES = {
     }
 }
 
+
 def get_malaysia_zone(lat, lon):
-    # Semenanjung Malaysia
-    if 1 <= lat <= 6.75:
-        # Perlis
-        if 100.13 <= lon <= 100.9 and 6.18 <= lat <= 6.7:
-            return 'PLS01'
-        
-        # Kedah
-        elif 100.15 <= lon <= 101.15 and 5.4 <= lat <= 6.65:
-            if lon <= 100.55:
-                return 'KDH01'  # Kota Setar, Kubang Pasu, Pokok Sena
-            elif lon <= 100.75:
-                return 'KDH02'  # Pendang, Kuala Muda, Yan
-            else:
-                return 'KDH03'  # Baling, Sik, Padang Terap
-        
-        # Pulau Pinang
-        elif 100.15 <= lon <= 100.55 and 5.1 <= lat <= 5.6:
-            return 'PNG01'
-        
-        # Perak
-        elif 100.55 <= lon <= 101.7 and 3.6 <= lat <= 5.85:
-            if lat >= 5.25:
-                return 'PRK01'  # Hulu Perak
-            elif lat >= 4.75:
-                return 'PRK02'  # Kerian, Larut & Matang, Selama, Kuala Kangsar, Perak Tengah
-            elif lat >= 4.3:
-                return 'PRK03'  # Kinta, Kampar
-            else:
-                return 'PRK04'  # Hilir Perak, Batang Padang, Muallim
-        
-        # Selangor
-        elif 100.85 <= lon <= 102 and 2.6 <= lat <= 3.9:
-            if lat >= 3.4:
-                return 'SGR01'  # Selangor 1
-            else:
-                return 'SGR02'  # Selangor 2
-        
-        # Kuala Lumpur & Putrajaya
-        elif 101.6 <= lon <= 101.8 and 2.9 <= lat <= 3.2:
-            return 'WLY01'
-        
-        # Negeri Sembilan
-        elif 101.6 <= lon <= 102.7 and 2.4 <= lat <= 3.2:
-            if lon <= 102.3:
-                return 'NGS01'  # Jempol, Tampin
-            else:
-                return 'NGS02'  # Port Dickson, Seremban, Kuala Pilah, Jelebu, Rembau
-        
-        # Melaka
-        elif 102 <= lon <= 102.6 and 2.1 <= lat <= 2.5:
-            return 'MLK01'
-        
-        # Johor
-        elif 102.5 <= lon <= 104.5 and 1.2 <= lat <= 2.8:
-            if lon <= 103.5:
-                return 'JHR01'  # Pulau Aur dan Pemanggil
-            elif lat >= 2.4:
-                return 'JHR02'  # Kota Tinggi, Mersing, Johor Bahru
-            elif lon <= 103.2:
-                return 'JHR03'  # Kluang, Pontian
-            else:
-                return 'JHR04'  # Batu Pahat, Muar, Segamat, Tangkak
-        
-        # Pahang
-        elif 101.3 <= lon <= 104 and 2.7 <= lat <= 4.7:
-            if lon <= 102.5:
-                return 'PHG01'  # Pulau Tioman
-            elif lon <= 103:
-                return 'PHG02'  # Kuantan, Pekan, Rompin, Muadzam Shah
-            elif lat >= 3.8:
-                return 'PHG03'  # Maran, Jerantut, Temerloh, Bera
-            else:
-                return 'PHG04'  # Cameron Highlands, Genting Sempah, Bukit Fraser
-        
-        # Terengganu
-        elif 102.5 <= lon <= 104 and 4 <= lat <= 5.8:
-            if lat >= 5:
-                return 'TRG01'  # Kuala Terengganu, Marang
-            else:
-                return 'TRG02'  # Dungun, Kemaman
-        
-        # Kelantan
-        elif 101.5 <= lon <= 102.7 and 4.6 <= lat <= 6.25:
-            if lat >= 5.8:
-                return 'KTN01'  # Jeli, Gua Musang (Mukim Galas)
-            else:
-                return 'KTN02'  # Kota Bharu, Bachok, Pasir Puteh, Tumpat, Pasir Mas, Tanah Merah, Machang, Kuala Krai, Gua Musang (Mukim Chiku)
-    
-    # Sabah
-    elif 4 <= lat <= 7.5 and 115 <= lon <= 120:
-        if 116 <= lon <= 117 and 5 <= lat <= 7:
-            return 'SBH01'  # Zon 1 - Timur
-        else:
-            return 'SBH02'  # Zon 2 - Barat
-    
-    # Sarawak
-    elif 0.8 <= lat <= 5 and 109 <= lon <= 115.6:
-        if lon <= 112:
-            return 'SWK01'  # Zon 1 - Kuching, Samarahan, Serian, Sri Aman, Betong, Sarikei
-        elif lon <= 113.2:
-            return 'SWK02'  # Zon 2 - Sibu, Kapit, Mukah
-        else:
-            return 'SWK03'  # Zon 3 - Miri, Bintulu, Limbang
-    
-    # Wilayah Persekutuan Labuan
-    elif 5.2 <= lat <= 5.4 and 115.1 <= lon <= 115.3:
+    # Wilayah Persekutuan Labuan (check first — small island)
+    if 5.2 <= lat <= 5.4 and 115.1 <= lon <= 115.35:
         return 'WLY02'
-    
-    # Default jika tidak dapat menentukan zone
-    return 'WLY01'  # Default ke Wilayah Persekutuan sebagai langkah keselamatan
+
+    # Semenanjung Malaysia
+    if 1.2 <= lat <= 6.75 and 99.5 <= lon <= 104.5:
+        return _get_peninsular_zone(lat, lon)
+
+    # Sabah
+    if 4.0 <= lat <= 7.5 and 115.0 <= lon <= 119.5:
+        return _get_sabah_zone(lat, lon)
+
+    # Sarawak
+    if 0.8 <= lat <= 5.0 and 109.0 <= lon <= 115.6:
+        return _get_sarawak_zone(lat, lon)
+
+    return None
+
+
+def _get_peninsular_zone(lat, lon):
+    # Perlis
+    if 6.18 <= lat <= 6.75 and 100.1 <= lon <= 100.5:
+        return 'PLS01'
+
+    # Langkawi
+    if 6.15 <= lat <= 6.5 and 99.6 <= lon <= 100.0:
+        return 'KDH06'
+
+    # Pulau Pinang (check before Kedah — overlapping lat/lon)
+    if 5.1 <= lat <= 5.55 and 100.15 <= lon <= 100.55:
+        return 'PNG01'
+
+    # Kedah
+    if 5.4 <= lat <= 6.65 and 100.15 <= lon <= 101.15:
+        if lat >= 6.0 and lon <= 100.6:
+            return 'KDH01'
+        elif lon <= 100.75:
+            return 'KDH02'
+        elif lon >= 100.8 and lat >= 5.6:
+            return 'KDH04'
+        elif lon >= 100.75 and lat < 5.6:
+            return 'KDH05'
+        else:
+            return 'KDH03'
+
+    # Perak
+    if 3.6 <= lat <= 5.85 and 100.4 <= lon <= 101.7:
+        if lat >= 5.5:
+            return 'PRK04'
+        if lat >= 5.0 and lon <= 101.0:
+            return 'PRK03'
+        if lat >= 4.75 and lon <= 100.85:
+            return 'PRK06'
+        if lat >= 4.3:
+            return 'PRK02'
+        if lon <= 101.0:
+            return 'PRK05'
+        return 'PRK01'
+
+    # Kelantan
+    if 4.6 <= lat <= 6.25 and 101.5 <= lon <= 102.7:
+        if lat <= 5.0:
+            return 'KTN03'
+        return 'KTN01'
+
+    # Terengganu
+    if 4.0 <= lat <= 5.8 and 102.5 <= lon <= 103.6:
+        if lat >= 5.2:
+            return 'TRG02'
+        if lat >= 4.8:
+            return 'TRG01'
+        if lat >= 4.3:
+            return 'TRG03'
+        return 'TRG04'
+
+    # Kuala Lumpur & Putrajaya (check before Pahang/Selangor — small area inside their bounds)
+    if 2.95 <= lat <= 3.25 and 101.6 <= lon <= 101.8:
+        return 'WLY01'
+
+    # Negeri Sembilan (check before Pahang — overlapping lon range)
+    if 2.4 <= lat <= 3.15 and 101.7 <= lon <= 102.6:
+        if lat <= 2.7:
+            return 'NGS01'
+        return 'NGS02'
+
+    # Melaka
+    if 2.0 <= lat <= 2.5 and 102.0 <= lon <= 102.6:
+        return 'MLK01'
+
+    # Selangor
+    if 2.6 <= lat <= 3.9 and 100.85 <= lon <= 102.0:
+        if lat >= 3.5 and lon <= 101.5:
+            return 'SGR02'
+        if lon <= 101.5:
+            return 'SGR03'
+        return 'SGR01'
+
+    # Pahang
+    if 2.7 <= lat <= 4.7 and 101.8 <= lon <= 104.0:
+        if lat >= 4.3 and lon >= 103.5:
+            return 'PHG01'
+        if lon >= 103.0:
+            return 'PHG02'
+        if lat >= 3.8:
+            return 'PHG03'
+        if lat >= 3.5 and lon <= 102.0:
+            return 'PHG06'
+        if lat >= 3.3 and lon <= 102.1:
+            return 'PHG05'
+        return 'PHG04'
+
+    # Johor (1.37 excludes Singapore)
+    if 1.37 <= lat <= 2.8 and 102.4 <= lon <= 104.5:
+        if lon >= 104.0 and lat <= 2.0:
+            return 'JHR01'
+        if lat >= 2.3:
+            return 'JHR04'
+        if lon <= 103.2:
+            return 'JHR03'
+        return 'JHR02'
+
+    return None
+
+
+def _get_sabah_zone(lat, lon):
+    # Gunung Kinabalu (specific)
+    if 5.9 <= lat <= 6.1 and 116.4 <= lon <= 116.7:
+        return 'SBH06'
+
+    # Kudat
+    if lat >= 6.3 and 116.5 <= lon <= 117.5:
+        return 'SBH05'
+
+    # Kota Kinabalu / west coast
+    if lat >= 5.5 and lon <= 116.5:
+        return 'SBH07'
+
+    # Sandakan east
+    if lat >= 5.5 and lon >= 117.5:
+        return 'SBH01'
+
+    # Sandakan west
+    if lat >= 5.5 and 116.5 <= lon < 117.5:
+        return 'SBH02'
+
+    # Tawau east
+    if lat < 5.5 and lon >= 117.5:
+        return 'SBH03'
+
+    # Tawau west
+    if lat < 5.5 and 117.0 <= lon < 117.5:
+        return 'SBH04'
+
+    # Interior upper (Keningau)
+    if lat < 5.5 and 116.0 <= lon < 117.0:
+        return 'SBH08'
+
+    # Interior lower (Beaufort)
+    if lat < 5.5 and lon < 116.0:
+        return 'SBH09'
+
+    return 'SBH07'
+
+
+def _get_sarawak_zone(lat, lon):
+    # Limbang, Lawas
+    if lat >= 4.0 and lon >= 114.5:
+        return 'SWK01'
+
+    # Miri
+    if lon >= 113.8:
+        return 'SWK02'
+
+    # Bintulu
+    if lon >= 112.8:
+        return 'SWK03'
+
+    # Sibu, Kapit
+    if lon >= 111.8:
+        return 'SWK04'
+
+    # Sarikei
+    if lon >= 111.3:
+        return 'SWK05'
+
+    # Sri Aman, Betong
+    if lon >= 110.8:
+        return 'SWK06'
+
+    # Serian, Samarahan
+    if lon >= 110.45:
+        return 'SWK07'
+
+    # Kuching
+    return 'SWK08'
+
 
 def get_zone_info(zone_code):
     for state, zones in MALAYSIA_ZONES.items():
@@ -207,7 +292,10 @@ def get_zone_info(zone_code):
             return state, zones[zone_code]
     return None, None
 
+
 def get_malaysia_zone_info(lat, lon):
     zone_code = get_malaysia_zone(lat, lon)
+    if zone_code is None:
+        return None, None, None
     state, zone_name = get_zone_info(zone_code)
     return zone_code, state, zone_name
