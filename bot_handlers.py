@@ -3,6 +3,7 @@ from telebot.types import (
     Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,
     InlineKeyboardMarkup, InlineKeyboardButton,
     InlineQueryResultArticle, InputTextMessageContent,
+    LabeledPrice,
 )
 from database import (
     get_db_connection, update_user_location, update_user_language,
@@ -34,6 +35,7 @@ for _btn_key, _action in [
     ('btn_settings', 'settings'),
     ('btn_help', 'help'),
     ('btn_back', 'back'),
+    ('btn_donate', 'donate'),
 ]:
     for _text in get_all_texts_for_key(_btn_key):
         _MAIN_MENU_ACTIONS[_text] = _action
@@ -159,6 +161,10 @@ def register_handlers(bot: TeleBot):
     def language_command(message: Message):
         send_language_selection(bot, message)
 
+    @bot.message_handler(commands=['donate'])
+    def donate_command(message: Message):
+        send_donate_menu(bot, message)
+
     # --- State/Zone selection ---
 
     @bot.message_handler(func=lambda message: message.text in MALAYSIA_ZONES.keys())
@@ -239,6 +245,40 @@ def register_handlers(bot: TeleBot):
                               call.message.chat.id, call.message.message_id)
         send_main_menu(bot, call.message, lang)
 
+    # --- Donate callback (InlineKeyboard) ---
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('donate_'))
+    def handle_donate_callback(call):
+        user_id = call.from_user.id
+        lang = get_user_language(user_id)
+        amount = int(call.data.split('_')[1])
+        title = get_translation(lang, 'donate_title')
+        description = get_translation(lang, 'donate_description')
+        bot.send_invoice(
+            call.message.chat.id,
+            title=title,
+            description=description,
+            invoice_payload=f"donate_{amount}_{user_id}",
+            provider_token="",
+            currency="XTR",
+            prices=[LabeledPrice(label=title, amount=amount)],
+        )
+        bot.answer_callback_query(call.id)
+
+    # --- Payment handlers ---
+
+    @bot.pre_checkout_query_handler(func=lambda query: True)
+    def handle_pre_checkout(pre_checkout_query):
+        bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+    @bot.message_handler(content_types=['successful_payment'])
+    def handle_successful_payment(message: Message):
+        user_id = message.from_user.id
+        lang = get_user_language(user_id)
+        amount = message.successful_payment.total_amount
+        text = get_translation(lang, 'donate_thanks').format(amount=amount)
+        bot.send_message(message.chat.id, text)
+
     # --- Main menu buttons (all 7 languages) ---
 
     @bot.message_handler(func=lambda message: message.text in _MAIN_MENU_ACTIONS)
@@ -258,6 +298,8 @@ def register_handlers(bot: TeleBot):
             send_settings_menu(bot, message)
         elif action == 'help':
             help_command(message)
+        elif action == 'donate':
+            send_donate_menu(bot, message)
         elif action == 'back':
             lang = get_user_language(message.from_user.id)
             send_main_menu(bot, message, lang)
@@ -390,6 +432,7 @@ def send_main_menu(bot, message: Message, lang=None):
     markup.row(get_translation(lang, 'btn_hadith'), get_translation(lang, 'btn_doa'))
     markup.row(get_translation(lang, 'btn_qiblat'), get_translation(lang, 'btn_stats'))
     markup.row(get_translation(lang, 'btn_settings'), get_translation(lang, 'btn_help'))
+    markup.row(get_translation(lang, 'btn_donate'))
     bot.send_message(message.chat.id, get_translation(lang, 'select_option'), reply_markup=markup)
 
 
@@ -421,6 +464,19 @@ def send_language_selection(bot, message: Message):
         buttons.append(InlineKeyboardButton(name, callback_data=f"lang_{code}"))
     markup.add(*buttons)
     bot.reply_to(message, get_translation(lang, 'select_language'), reply_markup=markup)
+
+
+def send_donate_menu(bot, message: Message):
+    user_id = message.from_user.id
+    lang = get_user_language(user_id)
+    markup = InlineKeyboardMarkup(row_width=3)
+    amounts = [1, 5, 10, 25, 50, 100]
+    buttons = []
+    for amt in amounts:
+        label = get_translation(lang, 'donate_star').format(amt)
+        buttons.append(InlineKeyboardButton(f"⭐ {label}", callback_data=f"donate_{amt}"))
+    markup.add(*buttons)
+    bot.send_message(message.chat.id, get_translation(lang, 'donate_message'), reply_markup=markup)
 
 
 def send_state_selection(bot: TeleBot, message: Message):
