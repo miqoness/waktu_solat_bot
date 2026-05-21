@@ -236,6 +236,7 @@ _CITY_TO_ZONE = {
 }
 
 _geocode_cache = {}
+_country_cache = {}
 _NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse'
 _HEADERS = {'User-Agent': 'WaktuSolatBot/1.0'}
 
@@ -247,10 +248,24 @@ def get_malaysia_zone(lat, lon):
     return _zone_from_bounds(lat, lon)
 
 
-def _zone_from_geocoding(lat, lon):
+def get_country_code(lat, lon):
     cache_key = (round(lat, 2), round(lon, 2))
-    if cache_key in _geocode_cache:
-        return _geocode_cache[cache_key]
+    if cache_key in _country_cache:
+        return _country_cache[cache_key]
+    _do_geocode(lat, lon)
+    return _country_cache.get(cache_key)
+
+
+def get_location_name(lat, lon):
+    _do_geocode(lat, lon)
+    cache_key = (round(lat, 2), round(lon, 2))
+    return _country_cache.get(f"{cache_key}_name", f"{lat:.2f}, {lon:.2f}")
+
+
+def _do_geocode(lat, lon):
+    cache_key = (round(lat, 2), round(lon, 2))
+    if cache_key in _country_cache:
+        return
 
     try:
         resp = requests.get(_NOMINATIM_URL, params={
@@ -260,21 +275,33 @@ def _zone_from_geocoding(lat, lon):
         resp.raise_for_status()
         data = resp.json()
     except Exception:
-        return None
+        return
 
     addr = data.get('address', {})
-    country = addr.get('country_code', '')
-    if country != 'my':
-        _geocode_cache[cache_key] = None
-        return None
+    country_code = addr.get('country_code', '')
+    _country_cache[cache_key] = country_code
 
-    state_raw = addr.get('state', '').strip()
     city = addr.get('city', addr.get('town', addr.get('village', ''))).strip()
-    county = addr.get('county', addr.get('state_district', '')).strip()
+    country_name = addr.get('country', '').strip()
+    state = addr.get('state', '').strip()
+    parts = [p for p in [city, state, country_name] if p]
+    _country_cache[f"{cache_key}_name"] = ', '.join(parts) if parts else f"{lat:.2f}, {lon:.2f}"
 
-    zone = _match_zone(state_raw, city, county)
-    _geocode_cache[cache_key] = zone
-    return zone
+    if country_code == 'my':
+        state_raw = state
+        county = addr.get('county', addr.get('state_district', '')).strip()
+        zone = _match_zone(state_raw, city, county)
+        _geocode_cache[cache_key] = zone
+    else:
+        _geocode_cache[cache_key] = None
+
+
+def _zone_from_geocoding(lat, lon):
+    cache_key = (round(lat, 2), round(lon, 2))
+    if cache_key in _geocode_cache:
+        return _geocode_cache[cache_key]
+    _do_geocode(lat, lon)
+    return _geocode_cache.get(cache_key)
 
 
 def _match_zone(state_raw, city, county):

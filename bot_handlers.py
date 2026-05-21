@@ -15,7 +15,7 @@ from prayer_times import (
     format_prayer_times, format_weekly_prayer_times, format_monthly_prayer_times,
     get_next_prayer, get_prayer_times, parse_time,
 )
-from zone_finder import get_malaysia_zone
+from zone_finder import get_malaysia_zone, get_location_name
 from hadis_harian import send_daily_hadith
 from doa_harian import send_daily_doa
 from qiblat import format_qiblat_info
@@ -90,8 +90,8 @@ def register_handlers(bot: TeleBot):
         zone, lat, lon = get_user_location_info(user_id)
         if not zone and lat and lon:
             zone = get_malaysia_zone(lat, lon)
-        if zone:
-            result = format_weekly_prayer_times(zone)
+        if zone or (lat and lon):
+            result = format_weekly_prayer_times(zone, lat, lon)
             if result:
                 bot.send_message(message.chat.id, result, parse_mode='Markdown')
             else:
@@ -106,10 +106,10 @@ def register_handlers(bot: TeleBot):
         zone, lat, lon = get_user_location_info(user_id)
         if not zone and lat and lon:
             zone = get_malaysia_zone(lat, lon)
-        if zone:
-            messages = format_monthly_prayer_times(zone)
-            if messages:
-                for msg in messages:
+        if zone or (lat and lon):
+            msgs = format_monthly_prayer_times(zone, lat, lon)
+            if msgs:
+                for msg in msgs:
                     bot.send_message(message.chat.id, msg, parse_mode='Markdown')
             else:
                 lang = get_user_language(user_id)
@@ -155,7 +155,7 @@ def register_handlers(bot: TeleBot):
             lang = get_user_language(user_id)
             bot.reply_to(message, get_translation(lang, 'zone_updated').format(selected_zone_name), reply_markup=ReplyKeyboardRemove())
 
-            prayer_times_text = format_prayer_times(zone_code)
+            prayer_times_text = format_prayer_times(zone_code, lang=lang)
             if prayer_times_text:
                 bot.send_message(user_id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
             else:
@@ -174,22 +174,24 @@ def register_handlers(bot: TeleBot):
         user_id = message.from_user.id
         lat = message.location.latitude
         lon = message.location.longitude
+        lang = get_user_language(user_id)
 
         zone = get_malaysia_zone(lat, lon)
-        lang = get_user_language(user_id)
 
         if zone:
             update_user_location(user_id, zone=zone, lat=lat, lon=lon)
             zone_name = get_zone_name(zone)
             bot.reply_to(message, get_translation(lang, 'location_updated').format(zone_name))
-
-            prayer_times_text = format_prayer_times(zone)
-            if prayer_times_text:
-                bot.send_message(user_id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
-            else:
-                bot.send_message(user_id, get_translation(lang, 'error_getting_prayer_times'))
         else:
-            bot.reply_to(message, get_translation(lang, 'location_out_of_malaysia'))
+            update_user_location(user_id, lat=lat, lon=lon)
+            loc_name = get_location_name(lat, lon)
+            bot.reply_to(message, get_translation(lang, 'location_updated_intl').format(loc_name))
+
+        prayer_times_text = format_prayer_times(zone, lat, lon, lang)
+        if prayer_times_text:
+            bot.send_message(user_id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
+        else:
+            bot.send_message(user_id, get_translation(lang, 'error_getting_prayer_times'))
 
         send_main_menu(bot, message, lang)
 
@@ -388,11 +390,11 @@ def send_zone_selection(bot: TeleBot, message: Message, selected_state: str):
 def send_today_prayer_times(bot, message: Message):
     user_id = message.from_user.id
     zone, lat, lon = get_user_location_info(user_id)
+    lang = get_user_language(user_id)
     if zone or (lat and lon):
-        prayer_times_text = format_prayer_times(zone, lat, lon)
+        prayer_times_text = format_prayer_times(zone, lat, lon, lang)
         bot.send_message(message.chat.id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
     else:
-        lang = get_user_language(user_id)
         bot.reply_to(message, get_translation(lang, 'location_not_set'))
         send_location_request(bot, message)
 
