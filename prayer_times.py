@@ -269,16 +269,16 @@ def format_prayer_times(zone, lat=None, lon=None, lang='ms'):
 
     if location_type == 'Malaysia' and zone:
         zone_name = get_zone_name(zone)
-        formatted = f"🕌 *Waktu Solat untuk {zone_name} ({zone}):*\n\n"
+        formatted = get_translation(lang, 'prayer_header_zone').format(name=zone_name, code=zone) + "\n\n"
     else:
         loc_name = get_location_name(lat, lon) if lat and lon else "?"
         country = get_country_code(lat, lon) if lat and lon else None
         method = _get_method_for_country(country or '')
         method_name = METHOD_NAMES.get(method, 'Muslim World League')
         school = 'Hanafi' if _get_school_for_country(country or '') == 1 else "Shafi'i"
-        formatted = f"🕌 *Waktu Solat untuk {loc_name}:*\n\n"
-        formatted += f"📐 *Kaedah:* {method_name}\n"
-        formatted += f"📖 *Mazhab:* {school}\n\n"
+        formatted = get_translation(lang, 'prayer_header_location').format(name=loc_name) + "\n\n"
+        formatted += get_translation(lang, 'label_method').format(method=method_name) + "\n"
+        formatted += get_translation(lang, 'label_school').format(school=school) + "\n\n"
 
     for prayer, time_val in times.items():
         emoji = emojis.get(prayer, '')
@@ -292,14 +292,14 @@ def format_prayer_times(zone, lat=None, lon=None, lang='ms'):
             formatted_time = 'N/A'
         formatted += f"{emoji} *{prayer}:* {formatted_time}\n"
 
-    formatted += f"\n📅 *Tarikh:* {datetime.utcnow().strftime('%d/%m/%Y')}"
+    formatted += get_translation(lang, 'label_date').format(date=datetime.utcnow().strftime('%d/%m/%Y'))
     if location_type == 'Malaysia':
-        formatted += "\n🕰 *Zon Waktu:* Asia/Kuala\\_Lumpur"
+        formatted += get_translation(lang, 'label_timezone').format(tz='Asia/Kuala\\_Lumpur')
 
     return formatted
 
 
-def format_weekly_prayer_times(zone=None, lat=None, lon=None):
+def format_weekly_prayer_times(zone=None, lat=None, lon=None, lang='ms'):
     if zone:
         days = get_jakim_prayer_times_period(zone, 'week')
         title = f"{get_zone_name(zone)} ({zone})"
@@ -319,7 +319,7 @@ def format_weekly_prayer_times(zone=None, lat=None, lon=None):
     if not days:
         return None
 
-    formatted = f"📅 *Waktu Solat Mingguan — {title}*\n"
+    formatted = get_translation(lang, 'weekly_title').format(title=title) + "\n"
     for day in days:
         date_str = day.get('date', '')
         day_name = day.get('day', '')
@@ -336,7 +336,7 @@ def format_weekly_prayer_times(zone=None, lat=None, lon=None):
     return formatted
 
 
-def format_monthly_prayer_times(zone=None, lat=None, lon=None):
+def format_monthly_prayer_times(zone=None, lat=None, lon=None, lang='ms'):
     if zone:
         days = get_jakim_prayer_times_period(zone, 'month')
         title = f"{get_zone_name(zone)} ({zone})"
@@ -360,8 +360,8 @@ def format_monthly_prayer_times(zone=None, lat=None, lon=None):
         chunk = days[i:i + chunk_size]
         part = i // chunk_size + 1
         total_parts = (len(days) + chunk_size - 1) // chunk_size
-        formatted = f"📅 *Waktu Solat Bulanan — {title}*\n"
-        formatted += f"_(Bahagian {part}/{total_parts})_\n"
+        formatted = get_translation(lang, 'monthly_title').format(title=title) + "\n"
+        formatted += get_translation(lang, 'monthly_part').format(part=part, total=total_parts) + "\n"
 
         for day in chunk:
             date_str = day.get('date', '')
@@ -489,11 +489,7 @@ def get_next_prayer(zone, lat=None, lon=None):
             prayer_dt = now.replace(hour=prayer_time.hour, minute=prayer_time.minute, second=0, microsecond=0)
             remaining = prayer_dt - now
             mins = int(remaining.total_seconds() // 60)
-            if mins >= 60:
-                countdown = f"{mins // 60} jam {mins % 60} minit"
-            else:
-                countdown = f"{mins} minit"
-            return prayer, prayer_time.strftime('%I:%M %p'), location_type, countdown
+            return prayer, prayer_time.strftime('%I:%M %p'), location_type, mins
 
     first_fard = [(p, t) for p, t in times.items() if p in FARD_PRAYERS]
     if first_fard:
@@ -506,9 +502,7 @@ def get_next_prayer(zone, lat=None, lon=None):
                 prayer_dt = tomorrow.replace(hour=prayer_time.hour, minute=prayer_time.minute, second=0, microsecond=0)
                 remaining = prayer_dt - now
                 mins = int(remaining.total_seconds() // 60)
-                hours = mins // 60
-                countdown = f"{hours} jam {mins % 60} minit"
-                return prayer, prayer_time.strftime('%I:%M %p'), location_type, countdown
+                return prayer, prayer_time.strftime('%I:%M %p'), location_type, mins
             except ValueError:
                 pass
 

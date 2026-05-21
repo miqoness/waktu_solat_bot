@@ -9,7 +9,7 @@ from database import (
     update_user_pre_notification, get_user_pre_notification,
     log_prayer, get_today_prayers, get_prayer_stats, get_user_location_info as db_get_user_location_info,
 )
-from translations import get_translation
+from translations import get_translation, get_all_texts_for_key, detect_language, SUPPORTED_LANGUAGES
 from prayer_times import (
     MALAYSIA_ZONES, FARD_PRAYERS,
     format_prayer_times, format_weekly_prayer_times, format_monthly_prayer_times,
@@ -24,20 +24,45 @@ from pytz import timezone
 import hashlib
 
 
-def register_handlers(bot: TeleBot):
+_MAIN_MENU_ACTIONS = {}
+for _btn_key, _action in [
+    ('btn_prayer_times', 'prayer_times'),
+    ('btn_hadith', 'hadith'),
+    ('btn_doa', 'doa'),
+    ('btn_qiblat', 'qiblat'),
+    ('btn_stats', 'stats'),
+    ('btn_settings', 'settings'),
+    ('btn_help', 'help'),
+    ('btn_back', 'back'),
+]:
+    for _text in get_all_texts_for_key(_btn_key):
+        _MAIN_MENU_ACTIONS[_text] = _action
 
-    # --- Commands ---
+_SETTINGS_ACTIONS = {}
+for _btn_key, _action in [
+    ('btn_select_zone', 'select_zone'),
+    ('btn_change_language', 'change_language'),
+    ('btn_pre_notification', 'pre_notification'),
+    ('btn_weekly', 'weekly'),
+    ('btn_monthly', 'monthly'),
+]:
+    for _text in get_all_texts_for_key(_btn_key):
+        _SETTINGS_ACTIONS[_text] = _action
+
+
+def register_handlers(bot: TeleBot):
 
     @bot.message_handler(commands=['start'])
     def start_command(message: Message):
-        lang = get_user_language(message.from_user.id)
+        user_id = message.from_user.id
+        lang = _get_or_detect_language(user_id, message.from_user.language_code)
         bot.reply_to(message, get_translation(lang, 'welcome'))
         send_main_menu(bot, message, lang)
 
     @bot.message_handler(commands=['help'])
     def help_command(message: Message):
         lang = get_user_language(message.from_user.id)
-        bot.reply_to(message, get_translation(lang, 'help_text'))
+        bot.reply_to(message, get_translation(lang, 'help_text'), parse_mode='Markdown')
 
     @bot.message_handler(commands=['zone'])
     def zone_command(message: Message):
@@ -52,10 +77,15 @@ def register_handlers(bot: TeleBot):
         user_id = message.from_user.id
         zone, lat, lon = get_user_location_info(user_id)
         if zone or (lat and lon):
-            next_prayer, next_time, location_type, countdown = get_next_prayer(zone, lat, lon)
+            next_prayer, next_time, location_type, remaining_mins = get_next_prayer(zone, lat, lon)
             lang = get_user_language(user_id)
-            if next_prayer and countdown:
-                response = get_translation(lang, 'next_prayer_countdown').format(next_prayer, next_time, countdown)
+            if next_prayer and remaining_mins is not None:
+                if remaining_mins >= 60:
+                    cd = get_translation(lang, 'countdown_hours_mins').format(
+                        h=remaining_mins // 60, m=remaining_mins % 60)
+                else:
+                    cd = get_translation(lang, 'countdown_mins').format(m=remaining_mins)
+                response = get_translation(lang, 'next_prayer_countdown').format(next_prayer, next_time, cd)
             elif next_prayer:
                 response = get_translation(lang, 'next_prayer').format(next_prayer, next_time)
             else:
@@ -88,14 +118,14 @@ def register_handlers(bot: TeleBot):
     def weekly_command(message: Message):
         user_id = message.from_user.id
         zone, lat, lon = get_user_location_info(user_id)
+        lang = get_user_language(user_id)
         if not zone and lat and lon:
             zone = get_malaysia_zone(lat, lon)
         if zone or (lat and lon):
-            result = format_weekly_prayer_times(zone, lat, lon)
+            result = format_weekly_prayer_times(zone, lat, lon, lang)
             if result:
                 bot.send_message(message.chat.id, result, parse_mode='Markdown')
             else:
-                lang = get_user_language(user_id)
                 bot.reply_to(message, get_translation(lang, 'weekly_not_available'))
         else:
             send_location_request(bot, message)
@@ -104,15 +134,15 @@ def register_handlers(bot: TeleBot):
     def monthly_command(message: Message):
         user_id = message.from_user.id
         zone, lat, lon = get_user_location_info(user_id)
+        lang = get_user_language(user_id)
         if not zone and lat and lon:
             zone = get_malaysia_zone(lat, lon)
         if zone or (lat and lon):
-            msgs = format_monthly_prayer_times(zone, lat, lon)
+            msgs = format_monthly_prayer_times(zone, lat, lon, lang)
             if msgs:
                 for msg in msgs:
                     bot.send_message(message.chat.id, msg, parse_mode='Markdown')
             else:
-                lang = get_user_language(user_id)
                 bot.reply_to(message, get_translation(lang, 'monthly_not_available'))
         else:
             send_location_request(bot, message)
@@ -127,9 +157,7 @@ def register_handlers(bot: TeleBot):
 
     @bot.message_handler(commands=['language'])
     def language_command(message: Message):
-        markup = ReplyKeyboardMarkup(row_width=2)
-        markup.add(KeyboardButton("Bahasa Melayu"), KeyboardButton("English"))
-        bot.reply_to(message, "Please select your language / Sila pilih bahasa anda:", reply_markup=markup)
+        send_language_selection(bot, message)
 
     # --- State/Zone selection ---
 
@@ -153,11 +181,12 @@ def register_handlers(bot: TeleBot):
         if zone_code:
             update_user_location(user_id, zone=zone_code)
             lang = get_user_language(user_id)
-            bot.reply_to(message, get_translation(lang, 'zone_updated').format(selected_zone_name), reply_markup=ReplyKeyboardRemove())
-
+            bot.reply_to(message, get_translation(lang, 'zone_updated').format(selected_zone_name),
+                         reply_markup=ReplyKeyboardRemove())
             prayer_times_text = format_prayer_times(zone_code, lang=lang)
             if prayer_times_text:
-                bot.send_message(user_id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
+                bot.send_message(user_id, prayer_times_text, parse_mode='Markdown',
+                                 reply_markup=_prayer_log_keyboard(user_id))
             else:
                 bot.send_message(user_id, get_translation(lang, 'error_getting_prayer_times'))
         else:
@@ -189,66 +218,64 @@ def register_handlers(bot: TeleBot):
 
         prayer_times_text = format_prayer_times(zone, lat, lon, lang)
         if prayer_times_text:
-            bot.send_message(user_id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
+            bot.send_message(user_id, prayer_times_text, parse_mode='Markdown',
+                             reply_markup=_prayer_log_keyboard(user_id))
         else:
             bot.send_message(user_id, get_translation(lang, 'error_getting_prayer_times'))
 
         send_main_menu(bot, message, lang)
 
-    # --- Language selection ---
+    # --- Language callback (InlineKeyboard) ---
 
-    @bot.message_handler(func=lambda message: message.text in ["Bahasa Melayu", "English"])
-    def handle_language_selection(message: Message):
-        user_id = message.from_user.id
-        lang = 'ms' if message.text == "Bahasa Melayu" else 'en'
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('lang_'))
+    def handle_language_callback(call):
+        user_id = call.from_user.id
+        lang = call.data.split('_', 1)[1]
+        if lang not in SUPPORTED_LANGUAGES:
+            lang = 'en'
         update_user_language(user_id, lang)
-        bot.reply_to(message, get_translation(lang, 'language_updated'), reply_markup=ReplyKeyboardRemove())
-        send_main_menu(bot, message, lang)
+        bot.answer_callback_query(call.id, get_translation(lang, 'language_updated'))
+        bot.edit_message_text(get_translation(lang, 'language_updated'),
+                              call.message.chat.id, call.message.message_id)
+        send_main_menu(bot, call.message, lang)
 
-    # --- Main menu buttons ---
+    # --- Main menu buttons (all 7 languages) ---
 
-    @bot.message_handler(func=lambda message: message.text in [
-        "📅 Waktu Solat Hari Ini", "📚 Hadith Harian", "🕋 Arah Kiblat",
-        "🤲 Doa Harian", "📊 Statistik Solat", "⚙️ Tetapan", "❓ Bantuan",
-        "Kembali ke Menu Utama",
-    ])
+    @bot.message_handler(func=lambda message: message.text in _MAIN_MENU_ACTIONS)
     def handle_main_menu(message: Message):
-        text = message.text
-        if text == "📅 Waktu Solat Hari Ini":
+        action = _MAIN_MENU_ACTIONS[message.text]
+        if action == 'prayer_times':
             send_today_prayer_times(bot, message)
-        elif text == "📚 Hadith Harian":
+        elif action == 'hadith':
             send_daily_hadith(bot, message)
-        elif text == "🕋 Arah Kiblat":
-            qiblat_command(message)
-        elif text == "🤲 Doa Harian":
+        elif action == 'doa':
             send_daily_doa(bot, message)
-        elif text == "📊 Statistik Solat":
+        elif action == 'qiblat':
+            qiblat_command(message)
+        elif action == 'stats':
             send_prayer_stats(bot, message)
-        elif text == "⚙️ Tetapan":
+        elif action == 'settings':
             send_settings_menu(bot, message)
-        elif text == "❓ Bantuan":
+        elif action == 'help':
             help_command(message)
-        elif text == "Kembali ke Menu Utama":
+        elif action == 'back':
             lang = get_user_language(message.from_user.id)
             send_main_menu(bot, message, lang)
 
-    # --- Settings submenu ---
+    # --- Settings submenu (all 7 languages) ---
 
-    @bot.message_handler(func=lambda message: message.text in [
-        "Pilih Zon Malaysia", "Tukar Bahasa", "Peringatan Awal",
-        "📅 Mingguan", "📅 Bulanan",
-    ])
-    def process_choice(message: Message):
-        text = message.text
-        if text == "Pilih Zon Malaysia":
+    @bot.message_handler(func=lambda message: message.text in _SETTINGS_ACTIONS)
+    def handle_settings(message: Message):
+        action = _SETTINGS_ACTIONS[message.text]
+        if action == 'select_zone':
             send_state_selection(bot, message)
-        elif text == "Tukar Bahasa":
-            language_command(message)
-        elif text == "Peringatan Awal":
+        elif action == 'change_language':
+            send_language_selection(bot, message)
+        elif action == 'pre_notification':
             send_pre_notification_menu(bot, message)
-        elif text == "📅 Mingguan":
+        elif action == 'weekly':
             weekly_command(message)
-        elif text == "📅 Bulanan":
+        elif action == 'monthly':
             monthly_command(message)
 
     # --- Pre-notification callback ---
@@ -287,7 +314,8 @@ def register_handlers(bot: TeleBot):
 
         try:
             new_markup = _prayer_log_keyboard(user_id)
-            bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=new_markup)
+            bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id,
+                                          reply_markup=new_markup)
         except Exception:
             pass
 
@@ -308,7 +336,8 @@ def register_handlers(bot: TeleBot):
             prayer_times_data, _ = get_prayer_times(code)
             if prayer_times_data:
                 lines = [f"🕌 Waktu Solat — {name} ({code})"]
-                emojis = {'Subuh': '🌄', 'Syuruk': '🌅', 'Zohor': '☀️', 'Asar': '🌇', 'Maghrib': '🌆', 'Isyak': '🌙'}
+                emojis = {'Subuh': '🌄', 'Syuruk': '🌅', 'Zohor': '☀️',
+                          'Asar': '🌇', 'Maghrib': '🌆', 'Isyak': '🌙'}
                 for prayer, time_val in prayer_times_data.items():
                     parsed = parse_time(time_val)
                     lines.append(f"{emojis.get(prayer, '')} {prayer}: {parsed or 'N/A'}")
@@ -340,35 +369,58 @@ def register_handlers(bot: TeleBot):
 
 # --- Helper functions ---
 
+def _get_or_detect_language(user_id, telegram_lang_code=None):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT language FROM users WHERE user_id = ?", (user_id,))
+    result = c.fetchone()
+    conn.close()
+    if result:
+        return result[0]
+    lang = detect_language(telegram_lang_code)
+    update_user_language(user_id, lang)
+    return lang
+
+
 def send_main_menu(bot, message: Message, lang=None):
     if lang is None:
         lang = get_user_language(message.from_user.id)
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row('📅 Waktu Solat Hari Ini')
-    markup.row('📚 Hadith Harian', '🤲 Doa Harian')
-    markup.row('🕋 Arah Kiblat', '📊 Statistik Solat')
-    markup.row('⚙️ Tetapan', '❓ Bantuan')
+    markup.row(get_translation(lang, 'btn_prayer_times'))
+    markup.row(get_translation(lang, 'btn_hadith'), get_translation(lang, 'btn_doa'))
+    markup.row(get_translation(lang, 'btn_qiblat'), get_translation(lang, 'btn_stats'))
+    markup.row(get_translation(lang, 'btn_settings'), get_translation(lang, 'btn_help'))
     bot.send_message(message.chat.id, get_translation(lang, 'select_option'), reply_markup=markup)
 
 
 def send_settings_menu(bot, message: Message):
     lang = get_user_language(message.from_user.id)
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(KeyboardButton("Hantar Lokasi", request_location=True))
-    markup.add(KeyboardButton("Pilih Zon Malaysia"))
-    markup.add(KeyboardButton("Tukar Bahasa"))
-    markup.add(KeyboardButton("Peringatan Awal"))
-    markup.row("📅 Mingguan", "📅 Bulanan")
-    markup.add(KeyboardButton("Kembali ke Menu Utama"))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_send_location'), request_location=True))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_select_zone')))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_change_language')))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_pre_notification')))
+    markup.row(get_translation(lang, 'btn_weekly'), get_translation(lang, 'btn_monthly'))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_back')))
     bot.reply_to(message, get_translation(lang, 'select_setting'), reply_markup=markup)
 
 
 def send_location_request(bot, message: Message):
-    markup = ReplyKeyboardMarkup(row_width=2)
-    markup.add(KeyboardButton("Hantar Lokasi", request_location=True))
-    markup.add(KeyboardButton("Pilih Zon Malaysia"))
     lang = get_user_language(message.from_user.id)
+    markup = ReplyKeyboardMarkup(row_width=2)
+    markup.add(KeyboardButton(get_translation(lang, 'btn_send_location'), request_location=True))
+    markup.add(KeyboardButton(get_translation(lang, 'btn_select_zone')))
     bot.reply_to(message, get_translation(lang, 'select_setting'), reply_markup=markup)
+
+
+def send_language_selection(bot, message: Message):
+    lang = get_user_language(message.from_user.id)
+    markup = InlineKeyboardMarkup(row_width=2)
+    buttons = []
+    for code, name in SUPPORTED_LANGUAGES.items():
+        buttons.append(InlineKeyboardButton(name, callback_data=f"lang_{code}"))
+    markup.add(*buttons)
+    bot.reply_to(message, get_translation(lang, 'select_language'), reply_markup=markup)
 
 
 def send_state_selection(bot: TeleBot, message: Message):
@@ -393,7 +445,8 @@ def send_today_prayer_times(bot, message: Message):
     lang = get_user_language(user_id)
     if zone or (lat and lon):
         prayer_times_text = format_prayer_times(zone, lat, lon, lang)
-        bot.send_message(message.chat.id, prayer_times_text, parse_mode='Markdown', reply_markup=_prayer_log_keyboard(user_id))
+        bot.send_message(message.chat.id, prayer_times_text, parse_mode='Markdown',
+                         reply_markup=_prayer_log_keyboard(user_id))
     else:
         bot.reply_to(message, get_translation(lang, 'location_not_set'))
         send_location_request(bot, message)
@@ -432,8 +485,12 @@ def send_pre_notification_menu(bot, message: Message):
 
     markup = InlineKeyboardMarkup(row_width=3)
     options = [
-        ("Matikan", 0), ("5 minit", 5), ("10 minit", 10),
-        ("15 minit", 15), ("20 minit", 20), ("30 minit", 30),
+        (get_translation(lang, 'prenotify_off'), 0),
+        (get_translation(lang, 'prenotify_min').format(5), 5),
+        (get_translation(lang, 'prenotify_min').format(10), 10),
+        (get_translation(lang, 'prenotify_min').format(15), 15),
+        (get_translation(lang, 'prenotify_min').format(20), 20),
+        (get_translation(lang, 'prenotify_min').format(30), 30),
     ]
 
     buttons = []
