@@ -19,7 +19,7 @@ TELEGRAM_LANG_MAP = {
 
 translations = {
     'ms': {
-        'welcome': "Selamat datang ke Bot Waktu Solat! 🕌\nSila hantar lokasi anda atau pilih zon untuk mula.",
+        'welcome': "Selamat datang ke SalatTime Bot! 🕌\nSila hantar lokasi anda atau pilih zon untuk mula.",
         'language_updated': "Bahasa telah dikemas kini ke Bahasa Melayu. ✅",
         'location_updated': "Lokasi anda telah dikemas kini ke zon {}. ✅",
         'location_updated_intl': "Lokasi anda telah dikemas kini ke {}. ✅",
@@ -30,7 +30,7 @@ translations = {
         'next_prayer_countdown': "Waktu solat seterusnya adalah *{}* pada *{}*\n⏳ Lagi *{}*",
         'error_getting_prayer_times': "Maaf, tidak dapat mendapatkan waktu solat untuk lokasi anda.",
         'help_text': (
-            "🕌 *Bot Waktu Solat — Bantuan*\n\n"
+            "🕌 *SalatTime Bot — Bantuan*\n\n"
             "/start — Mulakan bot\n"
             "/times — Waktu solat hari ini\n"
             "/next — Waktu solat seterusnya\n"
@@ -88,8 +88,8 @@ translations = {
         'btn_weekly': "📅 Mingguan",
         'btn_monthly': "📅 Bulanan",
         'btn_donate': "❤️ Derma",
-        'donate_message': "Sokong pembangunan Bot Waktu Solat! 🕌\n\nDerma anda membantu menampung kos server dan pembangunan fitur baru.\n\nPilih jumlah derma:",
-        'donate_title': "Derma untuk Bot Waktu Solat",
+        'donate_message': "Sokong pembangunan SalatTime Bot! 🕌\n\nDerma anda membantu menampung kos server dan pembangunan fitur baru.\n\nPilih jumlah derma:",
+        'donate_title': "Derma untuk SalatTime Bot",
         'donate_description': "Sokong pembangunan bot ini. Jazakallahu Khairan!",
         'donate_thanks': "Jazakallahu Khairan! ❤️ Terima kasih atas derma {amount} bintang anda. Semoga Allah membalas kebaikan anda.",
         'donate_star': "{} Bintang",
@@ -104,7 +104,7 @@ translations = {
         'monthly_part': '_(Bahagian {part}/{total})_',
     },
     'en': {
-        'welcome': "Welcome to the Prayer Times Bot! 🕌\nPlease send your location or choose a zone to start.",
+        'welcome': "Welcome to the SalatTime Bot! 🕌\nPlease send your location or choose a zone to start.",
         'language_updated': "Language has been updated to English. ✅",
         'location_updated': "Your location has been updated to zone {}. ✅",
         'location_updated_intl': "Your location has been updated to {}. ✅",
@@ -115,7 +115,7 @@ translations = {
         'next_prayer_countdown': "The next prayer is *{}* at *{}*\n⏳ *{}* remaining",
         'error_getting_prayer_times': "Sorry, unable to get prayer times for your location.",
         'help_text': (
-            "🕌 *Prayer Times Bot — Help*\n\n"
+            "🕌 *SalatTime Bot — Help*\n\n"
             "/start — Start the bot\n"
             "/times — Today's prayer times\n"
             "/next — Next prayer time\n"
@@ -173,8 +173,8 @@ translations = {
         'btn_weekly': "📅 Weekly",
         'btn_monthly': "📅 Monthly",
         'btn_donate': "❤️ Donate",
-        'donate_message': "Support the Prayer Times Bot! 🕌\n\nYour donation helps cover server costs and development of new features.\n\nChoose a donation amount:",
-        'donate_title': "Donate to Prayer Times Bot",
+        'donate_message': "Support the SalatTime Bot! 🕌\n\nYour donation helps cover server costs and development of new features.\n\nChoose a donation amount:",
+        'donate_title': "Donate to SalatTime Bot",
         'donate_description': "Support the development of this bot. Jazakallahu Khairan!",
         'donate_thanks': "Jazakallahu Khairan! ❤️ Thank you for your donation of {amount} stars. May Allah reward your generosity.",
         'donate_star': "{} Stars",
@@ -189,7 +189,7 @@ translations = {
         'monthly_part': '_(Part {part}/{total})_',
     },
     'ar': {
-        'welcome': "مرحباً بك في بوت مواقيت الصلاة! 🕌\nأرسل موقعك أو اختر منطقة للبدء.",
+        'welcome': "مرحباً بك في SalatTime Bot! 🕌\nأرسل موقعك أو اختر منطقة للبدء.",
         'language_updated': "تم تحديث اللغة إلى العربية. ✅",
         'location_updated': "تم تحديث موقعك إلى منطقة {}. ✅",
         'location_updated_intl': "تم تحديث موقعك إلى {}. ✅",
@@ -200,7 +200,7 @@ translations = {
         'next_prayer_countdown': "الصلاة التالية *{}* في *{}*\n⏳ متبقي *{}*",
         'error_getting_prayer_times': "عذراً، لا يمكن الحصول على أوقات الصلاة لموقعك.",
         'help_text': (
-            "🕌 *بوت مواقيت الصلاة — المساعدة*\n\n"
+            "🕌 *SalatTime Bot — المساعدة*\n\n"
             "/start — بدء البوت\n"
             "/times — أوقات صلاة اليوم\n"
             "/next — وقت الصلاة التالي\n"
@@ -258,8 +258,8 @@ translations = {
         'btn_weekly': "📅 أسبوعي",
         'btn_monthly': "📅 شهري",
         'btn_donate': "❤️ تبرع",
-        'donate_message': "ادعم بوت مواقيت الصلاة! 🕌\n\nتبرعك يساعد في تغطية تكاليف الخادم وتطوير ميزات جديدة.\n\nاختر مبلغ التبرع:",
-        'donate_title': "تبرع لبوت مواقيت الصلاة",
+        'donate_message': "ادعم SalatTime Bot! 🕌\n\nتبرعك يساعد في تغطية تكاليف الخادم وتطوير ميزات جديدة.\n\nاختر مبلغ التبرع:",
+        'donate_title': "تبرع لSalatTime Bot",
         'donate_description': "ادعم تطوير هذا البوت. جزاك الله خيراً!",
         'donate_thanks': "جزاك الله خيراً! ❤️ شكراً لتبرعك بـ {amount} نجمة. جعله الله في ميزان حسناتك.",
         'donate_star': "{} نجمة",
@@ -274,7 +274,7 @@ translations = {
         'monthly_part': '_(الجزء {part}/{total})_',
     },
     'tr': {
-        'welcome': "Namaz Vakitleri Botuna hoş geldiniz! 🕌\nKonumunuzu gönderin veya başlamak için bir bölge seçin.",
+        'welcome': "SalatTime Bot'a hoş geldiniz! 🕌\nKonumunuzu gönderin veya başlamak için bir bölge seçin.",
         'language_updated': "Dil Türkçe olarak güncellendi. ✅",
         'location_updated': "Konumunuz {} bölgesine güncellendi. ✅",
         'location_updated_intl': "Konumunuz {} olarak güncellendi. ✅",
@@ -285,7 +285,7 @@ translations = {
         'next_prayer_countdown': "Sıradaki namaz *{}* saat *{}*\n⏳ *{}* kaldı",
         'error_getting_prayer_times': "Üzgünüz, konumunuz için namaz vakitleri alınamadı.",
         'help_text': (
-            "🕌 *Namaz Vakitleri Botu — Yardım*\n\n"
+            "🕌 *SalatTime Bot — Yardım*\n\n"
             "/start — Botu başlat\n"
             "/times — Bugünün namaz vakitleri\n"
             "/next — Sıradaki namaz vakti\n"
@@ -343,8 +343,8 @@ translations = {
         'btn_weekly': "📅 Haftalık",
         'btn_monthly': "📅 Aylık",
         'btn_donate': "❤️ Bağış",
-        'donate_message': "Namaz Vakitleri Botunu destekleyin! 🕌\n\nBağışınız sunucu maliyetlerini ve yeni özellik geliştirmesini destekler.\n\nBağış miktarını seçin:",
-        'donate_title': "Namaz Vakitleri Botuna Bağış",
+        'donate_message': "SalatTime Bot'u destekleyin! 🕌\n\nBağışınız sunucu maliyetlerini ve yeni özellik geliştirmesini destekler.\n\nBağış miktarını seçin:",
+        'donate_title': "SalatTime Bot'a Bağış",
         'donate_description': "Bu botun geliştirilmesini destekleyin. Allah razı olsun!",
         'donate_thanks': "Allah razı olsun! ❤️ {amount} yıldız bağışınız için teşekkürler. Allah iyiliğinizi kabul etsin.",
         'donate_star': "{} Yıldız",
@@ -359,7 +359,7 @@ translations = {
         'monthly_part': '_(Bölüm {part}/{total})_',
     },
     'ur': {
-        'welcome': "نماز کے اوقات بوٹ میں خوش آمدید! 🕌\nشروع کرنے کے لیے اپنا مقام بھیجیں یا زون منتخب کریں۔",
+        'welcome': "SalatTime Bot میں خوش آمدید! 🕌\nشروع کرنے کے لیے اپنا مقام بھیجیں یا زون منتخب کریں۔",
         'language_updated': "زبان اردو میں تبدیل کر دی گئی۔ ✅",
         'location_updated': "آپ کا مقام زون {} میں اپ ڈیٹ کر دیا گیا۔ ✅",
         'location_updated_intl': "آپ کا مقام {} میں اپ ڈیٹ کر دیا گیا۔ ✅",
@@ -370,7 +370,7 @@ translations = {
         'next_prayer_countdown': "اگلی نماز *{}* وقت *{}* پر ہے\n⏳ *{}* باقی",
         'error_getting_prayer_times': "معذرت، آپ کے مقام کے لیے نماز کے اوقات حاصل نہیں ہو سکے۔",
         'help_text': (
-            "🕌 *نماز کے اوقات بوٹ — مدد*\n\n"
+            "🕌 *SalatTime Bot — مدد*\n\n"
             "/start — بوٹ شروع کریں\n"
             "/times — آج کے نماز کے اوقات\n"
             "/next — اگلی نماز کا وقت\n"
@@ -428,8 +428,8 @@ translations = {
         'btn_weekly': "📅 ہفتہ وار",
         'btn_monthly': "📅 ماہانہ",
         'btn_donate': "❤️ عطیہ",
-        'donate_message': "نماز کے اوقات بوٹ کی مدد کریں! 🕌\n\nآپ کا عطیہ سرور کے اخراجات اور نئی خصوصیات کی ترقی میں مدد کرتا ہے۔\n\nعطیہ کی رقم منتخب کریں:",
-        'donate_title': "نماز کے اوقات بوٹ کے لیے عطیہ",
+        'donate_message': "SalatTime Bot کی مدد کریں! 🕌\n\nآپ کا عطیہ سرور کے اخراجات اور نئی خصوصیات کی ترقی میں مدد کرتا ہے۔\n\nعطیہ کی رقم منتخب کریں:",
+        'donate_title': "SalatTime Bot کے لیے عطیہ",
         'donate_description': "اس بوٹ کی ترقی میں مدد کریں۔ جزاک اللہ خیراً!",
         'donate_thanks': "جزاک اللہ خیراً! ❤️ آپ کے {amount} ستاروں کے عطیہ کا شکریہ۔ اللہ آپ کی سخاوت کو قبول فرمائے۔",
         'donate_star': "{} ستارے",
@@ -444,7 +444,7 @@ translations = {
         'monthly_part': '_(حصہ {part}/{total})_',
     },
     'id': {
-        'welcome': "Selamat datang di Bot Waktu Sholat! 🕌\nSilakan kirim lokasi Anda atau pilih zona untuk memulai.",
+        'welcome': "Selamat datang di SalatTime Bot! 🕌\nSilakan kirim lokasi Anda atau pilih zona untuk memulai.",
         'language_updated': "Bahasa telah diperbarui ke Bahasa Indonesia. ✅",
         'location_updated': "Lokasi Anda telah diperbarui ke zona {}. ✅",
         'location_updated_intl': "Lokasi Anda telah diperbarui ke {}. ✅",
@@ -455,7 +455,7 @@ translations = {
         'next_prayer_countdown': "Waktu sholat berikutnya *{}* pada *{}*\n⏳ *{}* lagi",
         'error_getting_prayer_times': "Maaf, tidak dapat mendapatkan waktu sholat untuk lokasi Anda.",
         'help_text': (
-            "🕌 *Bot Waktu Sholat — Bantuan*\n\n"
+            "🕌 *SalatTime Bot — Bantuan*\n\n"
             "/start — Mulai bot\n"
             "/times — Waktu sholat hari ini\n"
             "/next — Waktu sholat berikutnya\n"
@@ -513,8 +513,8 @@ translations = {
         'btn_weekly': "📅 Mingguan",
         'btn_monthly': "📅 Bulanan",
         'btn_donate': "❤️ Donasi",
-        'donate_message': "Dukung Bot Waktu Sholat! 🕌\n\nDonasi Anda membantu menutupi biaya server dan pengembangan fitur baru.\n\nPilih jumlah donasi:",
-        'donate_title': "Donasi untuk Bot Waktu Sholat",
+        'donate_message': "Dukung SalatTime Bot! 🕌\n\nDonasi Anda membantu menutupi biaya server dan pengembangan fitur baru.\n\nPilih jumlah donasi:",
+        'donate_title': "Donasi untuk SalatTime Bot",
         'donate_description': "Dukung pengembangan bot ini. Jazakallahu Khairan!",
         'donate_thanks': "Jazakallahu Khairan! ❤️ Terima kasih atas donasi {amount} bintang Anda. Semoga Allah membalas kebaikan Anda.",
         'donate_star': "{} Bintang",
@@ -529,7 +529,7 @@ translations = {
         'monthly_part': '_(Bagian {part}/{total})_',
     },
     'fr': {
-        'welcome': "Bienvenue sur le Bot des Horaires de Prière ! 🕌\nEnvoyez votre position ou choisissez une zone pour commencer.",
+        'welcome': "Bienvenue sur SalatTime Bot ! 🕌\nEnvoyez votre position ou choisissez une zone pour commencer.",
         'language_updated': "La langue a été mise à jour en français. ✅",
         'location_updated': "Votre position a été mise à jour vers la zone {}. ✅",
         'location_updated_intl': "Votre position a été mise à jour vers {}. ✅",
@@ -540,7 +540,7 @@ translations = {
         'next_prayer_countdown': "La prochaine prière est *{}* à *{}*\n⏳ *{}* restantes",
         'error_getting_prayer_times': "Désolé, impossible d'obtenir les horaires de prière pour votre position.",
         'help_text': (
-            "🕌 *Bot Horaires de Prière — Aide*\n\n"
+            "🕌 *SalatTime Bot — Aide*\n\n"
             "/start — Démarrer le bot\n"
             "/times — Horaires de prière du jour\n"
             "/next — Prochaine prière\n"
@@ -598,8 +598,8 @@ translations = {
         'btn_weekly': "📅 Hebdomadaire",
         'btn_monthly': "📅 Mensuel",
         'btn_donate': "❤️ Don",
-        'donate_message': "Soutenez le Bot Horaires de Prière ! 🕌\n\nVotre don aide à couvrir les coûts du serveur et le développement de nouvelles fonctionnalités.\n\nChoisissez un montant :",
-        'donate_title': "Don pour le Bot Horaires de Prière",
+        'donate_message': "Soutenez SalatTime Bot ! 🕌\n\nVotre don aide à couvrir les coûts du serveur et le développement de nouvelles fonctionnalités.\n\nChoisissez un montant :",
+        'donate_title': "Don pour SalatTime Bot",
         'donate_description': "Soutenez le développement de ce bot. Jazakallahu Khairan !",
         'donate_thanks': "Jazakallahu Khairan ! ❤️ Merci pour votre don de {amount} étoiles. Qu'Allah récompense votre générosité.",
         'donate_star': "{} Étoiles",
